@@ -28,4 +28,12 @@ Compress will minimize the padding of the id3 tag. This will make the filesize a
 
 ## Tag editing
 
-tagger --set-track-number 1 --field=text-encoding --field-1
+tagger --set-text-information --frame-id TRCK --value 1/2
+tagger --set-attached-picture --description "abc" --picture @pic.jpg
+tagger apic set --description "abc" --picture @pic.jpg
+tagger trck set --value 2/3 my.mp3
+tagger trck set --value 1/2 --
+
+tagger fields trck get
+tagger fields trck set 2/3
+tagger fields apic set "description" @pic.jpeg

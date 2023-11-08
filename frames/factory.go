@@ -16,6 +16,32 @@ type FrameBody interface {
 
 type Frames []*Frame
 
+func (f *Frames) SetTextInformationFrame(id, info string) {
+	found := false
+	for j := 0; j < len(*f); {
+		if string((*f)[j].Header.ID) != id {
+			j++
+			continue
+		}
+		if !found {
+			(*f)[j].Body = &TextInformation{Information: info}
+			found = true
+			j++
+			continue
+		}
+		*f = append((*f)[:j], (*f)[j+1:]...)
+	}
+
+	if !found {
+		*f = append(*f, &Frame{
+			Header: &FrameHeader{
+				ID: id,
+			},
+			Body: &TextInformation{Information: info},
+		})
+	}
+}
+
 func (f *Frames) UnmarshalBinary(data []byte) error {
 	ptr := 0
 	for ptr < len(data) {
@@ -124,13 +150,15 @@ func (f *Frame) UnmarshalBinary(data []byte) error {
 }
 
 func (f *Frame) MarshalBinary() ([]byte, error) {
-	// marshal the header
-	fh, err := f.Header.MarshalBinary()
+	// marshal the body
+	fb, err := f.Body.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
-	// marshal the body
-	fb, err := f.Body.MarshalBinary()
+	// update the header size
+	f.Header.Size = len(fb)
+	// marshal the header
+	fh, err := f.Header.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
