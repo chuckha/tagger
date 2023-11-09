@@ -2,6 +2,7 @@ package tags
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"tagger/frames"
@@ -18,6 +19,11 @@ type ID3v2 struct {
 	Header  *Header
 	Frames  frames.Frames
 	Padding []byte
+
+	// f is file pointer to the mp3. This should be opened for writing.
+	f           *os.File
+	updated     bool
+	fullRewrite bool
 }
 
 func NewID3v2() *ID3v2 {
@@ -29,11 +35,12 @@ func NewID3v2() *ID3v2 {
 }
 
 func NewID3v2FromFile(file string) (*ID3v2, error) {
-	f, err := os.Open(file)
+	f, err := os.OpenFile(file, os.O_RDWR, 0644)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 	tag := NewID3v2()
+	tag.f = f
 	headerBytes := make([]byte, 10)
 	if _, err := f.Read(headerBytes); err != nil {
 		return nil, errors.WithStack(err)
@@ -58,6 +65,42 @@ func NewID3v2FromFile(file string) (*ID3v2, error) {
 	return tag, nil
 }
 
+func (i *ID3v2) Close() error {
+	defer i.f.Close()
+	if !i.updated {
+		return nil
+	}
+	b, err := i.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	if !i.fullRewrite {
+		if _, err := i.f.Seek(0, 0); err != nil {
+			return errors.WithStack(err)
+		}
+		_, err := i.f.Write(b)
+		return errors.WithStack(err)
+	}
+	// read in the rest of the file
+	mp3Bytes, err := io.ReadAll(i.f)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	// write the tag
+	if _, err := i.f.Seek(0, 0); err != nil {
+		return errors.WithStack(err)
+	}
+	if _, err := i.f.Write(b); err != nil {
+		return errors.WithStack(err)
+	}
+	// write the rest of the file
+	if _, err := i.f.Write(mp3Bytes); err != nil {
+		return errors.WithStack(err)
+	}
+
+	return errors.WithStack(i.f.Close())
+}
+
 func (i *ID3v2) MarshalBinary() ([]byte, error) {
 	frames := []byte{}
 	for _, frame := range i.Frames {
@@ -68,18 +111,18 @@ func (i *ID3v2) MarshalBinary() ([]byte, error) {
 		frames = append(frames, frameBytes...)
 	}
 
-	// add padding if necessary
-	if len(frames) < i.Header.Size {
-		padding := make([]byte, i.Header.Size-len(frames))
-		frames = append(frames, padding...)
-	}
-
-	// the new frames are bigger than the header; add some extra padding while we rewrite the whole file.
-	if len(frames) > i.Header.Size {
+	var padding []byte
+	switch len(frames) <= i.Header.Size {
+	case true:
+		// Pad the remaining space in the tag.
+		padding = make([]byte, i.Header.Size-len(frames))
+	case false:
+		// Tag size has grown too much. requires an entire file rewrite. Add additional padding.
+		i.fullRewrite = true
 		i.Header.Size = len(frames) + AdditionalPaddingSize
-		padding := make([]byte, AdditionalPaddingSize)
-		frames = append(frames, padding...)
+		padding = make([]byte, AdditionalPaddingSize)
 	}
+	frames = append(frames, padding...)
 
 	// marshal header
 	header, err := i.Header.MarshalBinary()
@@ -95,6 +138,7 @@ func (i *ID3v2) MarshalBinary() ([]byte, error) {
 // If there is no frame with the same id, it will append a new frame.
 // This will remove any other frames with the same id.
 func (i *ID3v2) SetTextFrame(id, value string) {
+	i.updated = true
 	i.Frames.SetTextInformationFrame(id, value)
 }
 

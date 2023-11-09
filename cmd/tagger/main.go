@@ -43,6 +43,10 @@ func main() {
 				panic(fmt.Sprintf("%+v", err))
 			}
 			tag.SetTextFrame("TRCK", *trcksetval)
+			if err := tag.Close(); err != nil {
+				panic(fmt.Sprintf("%+v", err))
+			}
+			os.Exit(0)
 		default:
 			flag.Usage()
 			os.Exit(1)
