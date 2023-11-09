@@ -7,7 +7,8 @@ import (
 	"tagger/id3v23/tags"
 )
 
-// tagger text-info --frame-id TRCK --value abc <file.
+// tagger text-info --frame-id TRCK --value abc <file>
+// frame id inputs...can they be dynamic?
 func main() {
 	fmt.Println(os.Args)
 	flag.Usage = func() {

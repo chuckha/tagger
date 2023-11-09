@@ -1,6 +1,9 @@
 package id3string
 
-import "fmt"
+import (
+	"fmt"
+	"unicode/utf8"
+)
 
 func EncodeString(enc byte, s string) []byte {
 	switch enc {
@@ -11,4 +14,20 @@ func EncodeString(enc byte, s string) []byte {
 	default:
 		panic(fmt.Sprintf("unhandled text encoding: %08b", enc))
 	}
+}
+
+func IsUnicode(in string) bool {
+	for len(in) > 0 {
+		r, size := utf8.DecodeRuneInString(in)
+		if r == utf8.RuneError {
+			// This means we have something that's kind of unicode but is a bit broken.
+			// So treat it as unicode
+			return true
+		}
+		if size > 1 {
+			return true
+		}
+		in = in[size:]
+	}
+	return false
 }
