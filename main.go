@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"tagger/tags"
+	"tagger/id3v23/tags"
 )
 
 func perr(err error) {
