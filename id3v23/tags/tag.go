@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 	"strings"
-	"tagger/frames"
+	"tagger/id3v23/frames"
 	"text/tabwriter"
 
 	"github.com/pkg/errors"
@@ -141,10 +141,6 @@ func (i *ID3v2) SetTextFrame(id, value string) {
 	i.updated = true
 	i.Frames.SetTextInformationFrame(id, value)
 }
-
-// marshal to bytes
-// oh and then overwrite the header of the file!
-// make sure it fits in the header space or else the whole file needs to be rewritten
 
 func (i *ID3v2) String() string {
 	var s strings.Builder

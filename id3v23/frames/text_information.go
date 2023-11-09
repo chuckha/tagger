@@ -3,6 +3,7 @@ package frames
 import (
 	"fmt"
 	"tagger/id3string"
+	"unicode/utf8"
 )
 
 // TextInformation are all of the text frames.
@@ -12,8 +13,28 @@ type TextInformation struct {
 	Information  string
 }
 
+func isUnicode(in string) bool {
+	for len(in) > 0 {
+		_, size := utf8.DecodeRuneInString(in)
+		if size > 1 {
+			return true
+		}
+		in = in[size:]
+	}
+	return false
+}
+
+func NewTextInformation(info string) *TextInformation {
+	ti := &TextInformation{Information: info}
+	if isUnicode(info) {
+		ti.TextEncoding = 1
+	}
+	return ti
+}
+
 func (t *TextInformation) UnmarshalBinary(data []byte) error {
 	t.TextEncoding = data[0]
+	// this extracts the string that is either null terminated; double null terminated; or all the bytes.
 	info, _ := id3string.ExtractStringFromEncoding(t.TextEncoding, data[1:])
 	t.Information = info
 	return nil
