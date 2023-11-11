@@ -136,3 +136,10 @@ A FramesTemplate looks liket this:
 | total | `{{.special.total}}` | This finds and counts all matching files before processing begins in order to keep a good consistent count and file order.
 
 ## Developing
+
+# References
+
+- [id3v2.2.0](https://mutagen-specs.readthedocs.io/en/latest/id3/id3v2.2.html)
+- [id3v2.3.0](https://mutagen-specs.readthedocs.io/en/latest/_sources/id3/id3v2.3.0.txt)
+- [additional id3v2.3 tags](https://exiftool.org/TagNames/ID3.html#Private)
+- [id3v2.4.0](https://mutagen-specs.readthedocs.io/en/latest/id3/id3v2.4.0-frames.html#tit1)
