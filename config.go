@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"tagger/id3v23/frames"
 
-	"github.com/pkg/errors"
+	"github.com/chuckha/tagger/id3v23/frames"
+
+	"gitlab.com/tozd/go/errors"
 )
 
 const (

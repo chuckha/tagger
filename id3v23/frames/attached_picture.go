@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"tagger/id3string"
+
+	"github.com/chuckha/tagger/id3string"
 
 	"gitlab.com/tozd/go/errors"
 )

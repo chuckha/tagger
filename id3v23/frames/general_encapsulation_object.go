@@ -2,7 +2,8 @@ package frames
 
 import (
 	"fmt"
-	"tagger/id3string"
+
+	"github.com/chuckha/tagger/id3string"
 )
 
 // GeneralEncapsulationObject have the ID GEOB

@@ -2,7 +2,8 @@ package frames
 
 import (
 	"fmt"
-	"tagger/id3string"
+
+	"github.com/chuckha/tagger/id3string"
 )
 
 // UnsynchronizedLyrics have an ID of USLT.

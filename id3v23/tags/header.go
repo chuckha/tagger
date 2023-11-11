@@ -2,7 +2,8 @@ package tags
 
 import (
 	"fmt"
-	"tagger/id3math"
+
+	"github.com/chuckha/tagger/id3math"
 
 	"gitlab.com/tozd/go/errors"
 )

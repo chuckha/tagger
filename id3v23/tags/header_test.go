@@ -2,8 +2,9 @@ package tags
 
 import (
 	"fmt"
-	"tagger/id3math"
 	"testing"
+
+	"github.com/chuckha/tagger/id3math"
 )
 
 func TestHeader_UnmarshalBinary(t *testing.T) {

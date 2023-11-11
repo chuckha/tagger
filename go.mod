@@ -1,4 +1,4 @@
-module tagger
+module github.com/chuckha/tagger
 
 go 1.21.3
 

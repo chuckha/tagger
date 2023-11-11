@@ -11,9 +11,10 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"tagger"
-	"tagger/id3v23/tags"
 	"text/template"
+
+	"github.com/chuckha/tagger"
+	"github.com/chuckha/tagger/id3v23/tags"
 )
 
 // tagger info <file>

@@ -2,7 +2,8 @@ package frames
 
 import (
 	"fmt"
-	"tagger/id3math"
+
+	"github.com/chuckha/tagger/id3math"
 )
 
 const (

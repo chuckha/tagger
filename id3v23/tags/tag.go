@@ -7,9 +7,10 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"tagger"
-	"tagger/id3v23/frames"
 	"text/tabwriter"
+
+	"github.com/chuckha/tagger"
+	"github.com/chuckha/tagger/id3v23/frames"
 
 	"gitlab.com/tozd/go/errors"
 )

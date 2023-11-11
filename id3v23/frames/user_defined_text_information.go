@@ -3,7 +3,8 @@ package frames
 import (
 	"encoding/json"
 	"fmt"
-	"tagger/id3string"
+
+	"github.com/chuckha/tagger/id3string"
 
 	"gitlab.com/tozd/go/errors"
 )
