@@ -16,10 +16,10 @@ func TestHeader_UnmarshalBinary(t *testing.T) {
 		}{
 			{
 				name: "valid header",
-				data: []byte{'I', 'D', '3', 4, 0, 0, 0, 0, 0, 0},
+				data: []byte{'I', 'D', '3', 3, 0, 0, 0, 0, 0, 0},
 				expected: &Header{
 					FileIdentifier:    []byte{'I', 'D', '3'},
-					MajorVersion:      4,
+					MajorVersion:      3,
 					Revision:          0,
 					Unsynchronisation: false,
 					ExtendedHeader:    false,
@@ -29,10 +29,10 @@ func TestHeader_UnmarshalBinary(t *testing.T) {
 			},
 			{
 				name: "valid header with flags",
-				data: []byte{'I', 'D', '3', 4, 0, 0b10100000, 0, 0, 0, 0},
+				data: []byte{'I', 'D', '3', 3, 0, 0b10100000, 0, 0, 0, 0},
 				expected: &Header{
 					FileIdentifier:    []byte{'I', 'D', '3'},
-					MajorVersion:      4,
+					MajorVersion:      3,
 					Revision:          0,
 					Unsynchronisation: true,
 					ExtendedHeader:    false,
@@ -42,10 +42,10 @@ func TestHeader_UnmarshalBinary(t *testing.T) {
 			},
 			{
 				name: "valid header with flags and size",
-				data: []byte{'I', 'D', '3', 4, 0, 0b11100000, 0, 0, 0, 1},
+				data: []byte{'I', 'D', '3', 3, 0, 0b11100000, 0, 0, 0, 1},
 				expected: &Header{
 					FileIdentifier:    []byte{'I', 'D', '3'},
-					MajorVersion:      4,
+					MajorVersion:      3,
 					Revision:          0,
 					Unsynchronisation: true,
 					ExtendedHeader:    true,
@@ -58,7 +58,7 @@ func TestHeader_UnmarshalBinary(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				h := &Header{}
 				if err := h.UnmarshalBinary(tt.data); err != nil {
-					t.Errorf("did not expect an error")
+					t.Errorf("did not expect an error: %+v", err)
 				}
 				if !h.Equal(tt.expected) {
 					t.Log("flags", h.Unsynchronisation, h.ExtendedHeader, h.Experimental)
