@@ -59,13 +59,19 @@ func NewID3v2FromFile(file string) (*ID3v2, error) {
 	return tag, nil
 }
 
+func (i *ID3v2) UnmarshalBinary(b []byte) error {
+	if err := i.Header.UnmarshalBinary(b[0:10]); err != nil {
+		return errors.WithStack(err)
+	}
+	if err := i.Frames.UnmarshalBinary(b[10:]); err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
+}
+
 // MarshalBinaryv2 will only marshal the id3v2 tag to binary.
 func (i *ID3v2) MarshalBinary() ([]byte, error) {
-	// marshal header
-	header, err := i.Header.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
+	originalHeaderSize := i.Header.Size
 	// TODO: marshal the extra header?
 	frames := []byte{}
 	for _, frame := range *i.Frames {
@@ -75,39 +81,46 @@ func (i *ID3v2) MarshalBinary() ([]byte, error) {
 		}
 		frames = append(frames, frameBytes...)
 	}
+	i.Header.Size = len(frames)
+	// marshal header
+	header, err := i.Header.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
 	tag := append(header, frames...)
 
-	// if the tag fits in the original tag, and the padding is within a threshold, just use the original tag size
-	// if the tag fits in the original tag, but there is too much padding; shrink the header
-	// if the frames don't fit in the header, make a new header with minimal padding
-
-	if len(tag)+MinimalPaddingSize > i.Header.Size {
+	// the new tag + padding is too large for the original header
+	if len(tag)+MinimalPaddingSize > originalHeaderSize+10 {
 		out := make([]byte, len(tag)+MinimalPaddingSize)
 		copy(out, tag)
 		return out, nil
 	}
 
-	// If there's only a little bit of padding left, just keep the same header size
-	if i.Header.Size-len(tag) < 3*MinimalPaddingSize {
-		out := make([]byte, i.Header.Size)
+	// the leftover padding is not significantly large
+	if (originalHeaderSize+10)-len(tag) < 3*MinimalPaddingSize {
+		out := make([]byte, originalHeaderSize+10)
 		copy(out, tag)
 		return out, nil
 	}
 
 	// otherwise shrink the header
+	// the leftover padding is massive. Shrink the padding
 	out := make([]byte, len(tag)+MinimalPaddingSize)
 	copy(out, tag)
 	return out, nil
 }
 
-func (i *ID3v2) ApplyConfig(cfg *tagger.Config) {
+func (i *ID3v2) ApplyConfig(cfg *tagger.Config) error {
 	for id, fb := range cfg.Frames {
-		i.Frames.ApplyFrame(frames.NewFrame(id, fb))
+		if err := i.Frames.ApplyFrame(frames.NewFrame(id, fb)); err != nil {
+			return err
+		}
 	}
 	// Don't actually want to remove APIC...
 	i.Frames.RemoveFramesWithID("APIC")
 
 	sort.Sort(i.Frames)
+	return nil
 }
 
 func (i *ID3v2) String() string {

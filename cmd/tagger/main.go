@@ -57,7 +57,9 @@ func main() {
 			panic(fmt.Sprintf("%+v", err))
 		}
 		fmt.Println("APPLYING...")
-		tag.ApplyConfig(cfg)
+		if err := tag.ApplyConfig(cfg); err != nil {
+			panic(fmt.Sprintf("%+v", err))
+		}
 		fmt.Println(tag)
 	case "template-tag":
 		templateTagfs.Parse(os.Args[2:])
@@ -168,7 +170,9 @@ func main() {
 				tag = tags.NewID3v2()
 			}
 			//			fmt.Println(tag)
-			tag.ApplyConfig(nc)
+			if err := tag.ApplyConfig(nc); err != nil {
+				panic(fmt.Sprintf("%+v", err))
+			}
 			//			fmt.Println(tag)
 			special["count"] = special["count"].(int) + 1
 			// generate the outfile name from the outfile pattern
