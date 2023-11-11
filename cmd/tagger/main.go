@@ -235,6 +235,8 @@ func main() {
 
 // subRegex substitutes the easier to read input pattern with the regex pattern
 func subRegex(inputPattern string) string {
+	inputPattern = strings.ReplaceAll(inputPattern, "(", `\(`)
+	inputPattern = strings.ReplaceAll(inputPattern, ")", `\)`)
 	// find any \$(\w+)\$ and replace them with `(?P<$1>\d+))`
 	// find any %(\w+)% and replace them with `(?P<$1>.+)
 	// input is a user pattern like     "FilePattern": "fables_$volume$_$fable$_aesop_64kb.mp3",

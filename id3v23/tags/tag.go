@@ -179,7 +179,7 @@ func (t *ID3v2) Write(src, dst string) error {
 		return errors.WithStack(err)
 	}
 	// create the output file if it doesn't exist or open it if it does.
-	outfile, err := os.OpenFile(dst, os.O_RDWR, 0644)
+	outfile, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return errors.WithStack(err)
 	}
