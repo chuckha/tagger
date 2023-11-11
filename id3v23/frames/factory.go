@@ -47,7 +47,8 @@ func (f Frames) Less(i, j int) bool {
 	if string(f[j].Header.ID) == "APIC" {
 		return true
 	}
-	return string(f[i].Header.ID) < string(f[j].Header.ID)
+	// Don't sort anything, just move APIC to the end
+	return false
 }
 func (f *Frames) Swap(i, j int) { (*f)[i], (*f)[j] = (*f)[j], (*f)[i] }
 

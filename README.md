@@ -90,14 +90,13 @@ Below describes each section and what it does.
 
 `tagger` provides several special matchers to be used within the FilePattern. These special patterns allow you to extract values from the file names and use them within the config template itself. For example, if your MP3 only has its track number in the file name and not in the frame data, this would allow you to extract the track number and put it in a TRCK frame.
 
-| special matcher | Description | Template variable | why |
-| --- | --- | --- | --- |
-| `$disk$` | Matches any string of digits | `{{.disk}}` | This is useful if the filename encodes the disk number. |
-| `$track$` | Matches any string of digits | `{{.track}}` | This is helpful for ordering tracks. |
-| `$chapter$` | Matches any string of digits | `{{.chapter}}` |  This is useful for audiobook chapters. |
-| `$part$` | Matches any string of digits | `{{.part}}` | This is useful for very broken down mp3 audiobooks |
-| `%title%` | Matches any string of characters | `{{.title}}` | This is useful to populate the TIT1 frame. |
-| `%reader%` | Matches any string of characters | `{{.reader}}` | This is for audiobooks when the reader is in the path. |
+`tagger` can extract digits or words from a title using this syntax: `$whatever$` for digits and `%something%` for words. The `whatever` and `something` are whatever you like and will be available to the template file.
+
+The variable you choose (e.g. `whatever`, `something` in the sentence above) must be unique.
+
+##### Example
+
+If `template-config.json` declares a `FilePattern` of `hello_vol_$volume$_track $track$ (%author%).mp3`, then the template will have access to `{{.volume}}`, `{{.track}}` and `{{.author}}`.
 
 ### `Overrides`
 
@@ -135,3 +134,5 @@ A FramesTemplate looks liket this:
 | --- | --- | --- |
 | count | `{{.special.count}}` | This is an ongoing count of every file processed regardless of where in the directory hierarchy it has been found |
 | total | `{{.special.total}}` | This finds and counts all matching files before processing begins in order to keep a good consistent count and file order.
+
+## Developing

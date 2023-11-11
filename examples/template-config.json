@@ -1,0 +1,10 @@
+{
+    "FilePattern": "fables_$volume$_$fable$_aesop_64kb.mp3",
+    "Overrides": {},
+    "OutputFilePattern": "examples/output/{{.volume}}_{{.fable}}.mp3",
+    "FramesTemplate": "./examples/config.json.tmpl",
+    "UserData": {    },
+    "Behavior": {
+        "missing-id3v2-tag": "add"
+    }
+}

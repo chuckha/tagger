@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -71,7 +72,7 @@ func main() {
 		fmt.Println(tmplcfg)
 		// first, replace the input pattern string with the correct regex and compile it
 		regexpattern := subRegex(tmplcfg.FilePattern)
-		fmt.Println("regexpattern", regexpattern)
+		//		fmt.Println("regexpattern", regexpattern)
 		re := regexp.MustCompile(regexpattern)
 
 		// compile the output file template
@@ -105,6 +106,9 @@ func main() {
 			total++
 			return nil
 		})
+		if err != nil {
+			panic(fmt.Sprintf("%+v", err))
+		}
 
 		// create special variables
 		special := map[string]any{
@@ -126,14 +130,16 @@ func main() {
 			}
 			// then extract the data from the file path
 			fmt.Println("working on", path)
+			// set up the config template context
 			extracted := map[string]any{}
 			for i, name := range re.SubexpNames() {
-				if name == "" {
+				if name == "" || name == "ignore" {
 					continue
 				}
 				extracted[name] = matches[i]
 			}
-			// apply the overrides (anything not captured the file path but used in the template is required)
+			// apply the overrides (anything not captured in the file path but used in the template is required)
+			// continue setting up the config template context
 			for name, override := range tmplcfg.Overrides {
 				extracted[name] = override
 			}
@@ -150,28 +156,30 @@ func main() {
 			}
 			tag, err := tags.NewID3v2FromFile(path)
 			if err != nil {
-				panic(fmt.Sprintf("%+v", err))
+				var e *tags.NoID3v2IdentifierError
+				if !errors.As(err, &e) {
+					panic(fmt.Sprintf("%+v", err))
+				}
+				if !tmplcfg.AddMissingTag() {
+					fmt.Printf("skipping %q; no id3 file identifier\n", path)
+					return nil
+				}
+				tag = tags.NewID3v2()
 			}
 			//			fmt.Println(tag)
 			tag.ApplyConfig(nc)
 			//			fmt.Println(tag)
 			special["count"] = special["count"].(int) + 1
+			// generate the outfile name from the outfile pattern
 			var outFile bytes.Buffer
 			if err := outFileTmpl.Execute(&outFile, extracted); err != nil {
 				panic(fmt.Sprintf("%+v", err))
 			}
 			if !*dryRun {
-				out, err := tag.Output()
-				if err != nil {
-					panic(fmt.Sprintf("%+v", err))
-				}
-				if err := os.WriteFile(outFile.String(), out, 0644); err != nil {
-					panic(fmt.Sprintf("%+v", err))
-				}
-				return tag.Close()
+				return tag.Write(path, outFile.String())
 			}
 			fmt.Printf("[dry run] would have written %q\n", outFile.String())
-			return tag.Close()
+			return nil
 
 		})
 		if err != nil {
@@ -226,13 +234,19 @@ func main() {
 
 // subRegex substitutes the easier to read input pattern with the regex pattern
 func subRegex(inputPattern string) string {
-	inputPattern = strings.ReplaceAll(inputPattern, "%ignore%", `(?P<ignore>.+)`)
-	inputPattern = strings.Replace(inputPattern, "$disk$", `(?P<disk>\d+)`, 1)
-	inputPattern = strings.Replace(inputPattern, "$track$", `(?P<track>\d+)`, 1)
-	inputPattern = strings.Replace(inputPattern, "%title%", `(?P<title>.+)`, 1)
-	inputPattern = strings.Replace(inputPattern, "%reader%", `(?P<reader>.+)`, 1)
-	inputPattern = strings.Replace(inputPattern, "$chapter$", `(?P<chapter>\d+)`, 1)
-	inputPattern = strings.Replace(inputPattern, "$part$", `(?P<part>\d+)`, 1)
+	// find any \$(\w+)\$ and replace them with `(?P<$1>\d+))`
+	// find any %(\w+)% and replace them with `(?P<$1>.+)
+	// input is a user pattern like     "FilePattern": "fables_$volume$_$fable$_aesop_64kb.mp3",
+	// output is a regular expression
+
+	digitGrabber := regexp.MustCompile(`\$(\w+)\$`)
+	for _, match := range digitGrabber.FindAllStringSubmatch(inputPattern, -1) {
+		inputPattern = strings.ReplaceAll(inputPattern, match[0], fmt.Sprintf(`(?P<%s>\d+)`, match[1]))
+	}
+	wordGrabber := regexp.MustCompile(`%(\w+)%`)
+	for _, match := range wordGrabber.FindAllStringSubmatch(inputPattern, -1) {
+		inputPattern = strings.ReplaceAll(inputPattern, match[0], fmt.Sprintf(`(?P<%s>.+)`, match[1]))
+	}
 	return inputPattern
 }
 
@@ -251,3 +265,10 @@ func get(in any, key string) any {
 		panic(fmt.Sprintf("unknown type %T", x))
 	}
 }
+
+// ID3Tag should not be aware of the file...
+// Open the file for Writing if there is no outputFilePattern defined.
+// Otherwise, only open the file for reading.
+
+// ID3Tag; it should just be the header data and some metadata like file location.
+// Then something else is responsible for writing the updates. The TagWriter.

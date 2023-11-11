@@ -7,6 +7,18 @@ import (
 	"gitlab.com/tozd/go/errors"
 )
 
+type NoID3v2IdentifierError struct {
+	actual []byte
+}
+
+func NewNoID3v2IdentifierError(actual []byte) *NoID3v2IdentifierError {
+	return &NoID3v2IdentifierError{actual: actual}
+}
+
+func (n *NoID3v2IdentifierError) Error() string {
+	return fmt.Sprintf("expected ID3v2 identifier, got %q", n.actual)
+}
+
 type Header struct {
 	FileIdentifier    []byte
 	MajorVersion      byte
@@ -14,7 +26,8 @@ type Header struct {
 	Unsynchronisation bool
 	ExtendedHeader    bool
 	Experimental      bool
-	Size              int
+	// If the tag changes in anyway, this may be out dated and should be updated upon writing.
+	Size int
 }
 
 func (h *Header) UnmarshalBinary(data []byte) error {
@@ -23,8 +36,14 @@ func (h *Header) UnmarshalBinary(data []byte) error {
 		return errors.Errorf("expected 10 bytes, got %d", len(data))
 	}
 	h.FileIdentifier = data[0:3]
+	if string(h.FileIdentifier) != "ID3" {
+		return errors.WithStack(NewNoID3v2IdentifierError(h.FileIdentifier))
+	}
 	h.MajorVersion = data[3]
 	h.Revision = data[4]
+	if h.MajorVersion != 3 {
+		return errors.Errorf("this program only supports v2.3.0; this file is v2.%d.%d", h.MajorVersion, h.Revision)
+	}
 	h.Unsynchronisation = data[5]&FlagUnsynchronisation == FlagUnsynchronisation
 	h.ExtendedHeader = data[5]&FlagExtendedHeader == FlagExtendedHeader
 	h.Experimental = data[5]&FlagExperimental == FlagExperimental
