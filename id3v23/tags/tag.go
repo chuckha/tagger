@@ -16,14 +16,12 @@ import (
 )
 
 const (
-	AdditionalPaddingSize = 2048
-	MinimalPaddingSize    = 1024
+	MinimalPaddingSize = 1024
 )
 
 type ID3v2 struct {
-	Header  *Header
-	Frames  *frames.Frames
-	Padding []byte
+	Header *Header
+	Frames *frames.Frames
 }
 
 func NewID3v2() *ID3v2 {
@@ -31,8 +29,7 @@ func NewID3v2() *ID3v2 {
 		Header: &Header{
 			MajorVersion: 3,
 		},
-		Frames:  &frames.Frames{},
-		Padding: make([]byte, 0),
+		Frames: &frames.Frames{},
 	}
 }
 
@@ -85,7 +82,7 @@ func (i *ID3v2) MarshalBinary() ([]byte, error) {
 	// if the frames don't fit in the header, make a new header with minimal padding
 
 	if len(tag)+MinimalPaddingSize > i.Header.Size {
-		out := make([]byte, len(frames)+MinimalPaddingSize)
+		out := make([]byte, len(tag)+MinimalPaddingSize)
 		copy(out, tag)
 		return out, nil
 	}
