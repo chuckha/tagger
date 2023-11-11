@@ -1,8 +1,11 @@
 package frames
 
 import (
+	"encoding/json"
 	"fmt"
 	"tagger/id3string"
+
+	"gitlab.com/tozd/go/errors"
 )
 
 // Comment are all of the comment frames.
@@ -27,6 +30,16 @@ func (c *Comment) UnmarshalBinary(data []byte) error {
 	c.ActualText = at
 	ptr += n
 	// TODO: check length maybe?
+	return nil
+}
+
+func (c *Comment) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, c); err != nil {
+		return errors.WithStack(err)
+	}
+	if id3string.IsUnicode(c.ShortContentDescription) || id3string.IsUnicode(c.ActualText) {
+		c.TextEncoding = 1
+	}
 	return nil
 }
 

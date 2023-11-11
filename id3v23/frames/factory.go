@@ -13,38 +13,71 @@ type FrameBody interface {
 	String() string
 	MarshalBinary() ([]byte, error)
 	UnmarshalBinary([]byte) error
+	UnmarshalJSON([]byte) error
+}
+
+type FrameBodyUnpacker struct {
+	FrameBody
+}
+
+// UnmarshalJSON will try to unpack the incoming bytes into the correct frame type.
+func (f *FrameBodyUnpacker) UnmarshalJSON(data []byte) error {
+	fbs := []FrameBody{
+		&Comment{}, &TextInformation{}, &AttachedPicture{}, &UserDefinedURL{},
+		&PrivateData{}, &UserDefinedTextInformation{}, &MusicCDIdentifier{},
+		//		&GeneralEncapsulationObject{}, &TermsOfUse{},
+	}
+	for _, fb := range fbs {
+		if err := fb.UnmarshalJSON(data); err == nil {
+			f.FrameBody = fb
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown frame type: %q", data)
 }
 
 type Frames []*Frame
 
-func (f *Frames) SetTextInformationFrame(id, info string) {
-	ti := NewTextInformation(info)
-	found := false
-	for j := 0; j < len(*f); {
-		if string((*f)[j].Header.ID) != id {
-			j++
-			continue
+// implement sort on frames
+func (f Frames) Len() int { return len(f) }
+func (f Frames) Less(i, j int) bool {
+	if string(f[i].Header.ID) == "APIC" {
+		return false
+	}
+	if string(f[j].Header.ID) == "APIC" {
+		return true
+	}
+	return string(f[i].Header.ID) < string(f[j].Header.ID)
+}
+func (f *Frames) Swap(i, j int) { (*f)[i], (*f)[j] = (*f)[j], (*f)[i] }
+
+func (f *Frames) RemoveFramesWithID(id string) {
+	for i := 0; i < len(*f); i++ {
+		if string((*f)[i].Header.ID) == id {
+			*f = append((*f)[:i], (*f)[i+1:]...)
+			i--
 		}
-		// replace the first instance of the tag with the same ide.
-		if !found {
-			(*f)[j].Body = ti
-			found = true
-			j++
-			continue
+	}
+}
+
+func (f *Frames) ApplyFrame(frame *Frame) error {
+	// TODO: add id3v2.3 rules here for how many of which frame can exist
+	switch IDToFrameKind[string(frame.Header.ID)] {
+	case TextInformationKind, NonStandardTextInformationKind:
+		// remove all of the frames with the same id
+		for i := 0; i < len(*f); i++ {
+			if (*f)[i].Header.ID == frame.Header.ID {
+				*f = append((*f)[:i], (*f)[i+1:]...)
+				i--
+			}
 		}
-		// remove all the other text information frames with the same id.
-		// the spec says only one text information frame with the same id is allowed.
-		*f = append((*f)[:j], (*f)[j+1:]...)
+	default:
+		return fmt.Errorf("apply frame cannot handle: %q", frame.Header.ID)
 	}
 
-	if !found {
-		*f = append(*f, &Frame{
-			Header: &FrameHeader{
-				ID: id,
-			},
-			Body: ti,
-		})
-	}
+	// append it if it's not handled by any above case
+	*f = append(*f, frame)
+	return nil
 }
 
 func (f *Frames) UnmarshalBinary(data []byte) error {
@@ -79,6 +112,13 @@ func (f *Frames) UnmarshalBinary(data []byte) error {
 type Frame struct {
 	Header *FrameHeader
 	Body   FrameBody
+}
+
+func NewFrame(id string, body FrameBody) *Frame {
+	return &Frame{
+		Header: &FrameHeader{ID: id},
+		Body:   body,
+	}
 }
 
 const (
@@ -160,16 +200,16 @@ func (f *Frame) UnmarshalBinary(data []byte) error {
 		f.Body = &UserDefinedURL{}
 	case PrivateKind:
 		f.Body = &PrivateData{}
-	case UnsynchronizedLyricsKind:
-		f.Body = &UnsynchronizedLyrics{}
+	// case UnsynchronizedLyricsKind:
+	// 	f.Body = &UnsynchronizedLyrics{}
 	case UserDefinedTextInformationKind:
 		f.Body = &UserDefinedTextInformation{}
 	case MusicCDIdentifierKind:
 		f.Body = &MusicCDIdentifier{}
-	case GeneralEncapsulationObjectKind:
-		f.Body = &GeneralEncapsulationObject{}
-	case TermsOfUseKind:
-		f.Body = &TermsOfUse{}
+	// case GeneralEncapsulationObjectKind:
+	// 	f.Body = &GeneralEncapsulationObject{}
+	// case TermsOfUseKind:
+	// 	f.Body = &TermsOfUse{}
 	default:
 		panic(fmt.Sprintf("unknown frame type: %q", f.Header.ID))
 	}

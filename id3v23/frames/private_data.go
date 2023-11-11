@@ -1,11 +1,13 @@
 package frames
 
 import (
+	"encoding/json"
 	"fmt"
 	"tagger/id3string"
+
+	"gitlab.com/tozd/go/errors"
 )
 
-// PrivateData are all of the text frames.
 // Private Data frames have an ID of PRIV
 type PrivateData struct {
 	OwnerIdentifier string
@@ -15,6 +17,13 @@ type PrivateData struct {
 func (p *PrivateData) UnmarshalBinary(data []byte) error {
 	p.OwnerIdentifier = id3string.ExtractNullTerminated(data)
 	p.Data = string(data[len(p.OwnerIdentifier)+1:])
+	return nil
+}
+
+func (b *PrivateData) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, b); err != nil {
+		return errors.WithStack(err)
+	}
 	return nil
 }
 

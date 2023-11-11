@@ -1,12 +1,14 @@
 package frames
 
 import (
+	"encoding/json"
 	"fmt"
 	"tagger/id3string"
+
+	"gitlab.com/tozd/go/errors"
 )
 
-// TextInformation are all of the text frames.
-// Text frames have IDs of T000-TZZZ excluding TXXX.
+// UserDefinedTextInformation
 type UserDefinedTextInformation struct {
 	TextEncoding byte
 	Description  string
@@ -20,6 +22,16 @@ func (u *UserDefinedTextInformation) UnmarshalBinary(data []byte) error {
 	u.Description = desc
 	ptr += len(u.Description) + n
 	u.Value = string(data[ptr:])
+	return nil
+}
+
+func (u *UserDefinedTextInformation) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, u); err != nil {
+		return errors.WithStack(err)
+	}
+	if id3string.IsUnicode(u.Description) || id3string.IsUnicode(u.Value) {
+		u.TextEncoding = 1
+	}
 	return nil
 }
 

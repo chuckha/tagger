@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
+	"tagger"
 	"tagger/id3v23/frames"
 	"text/tabwriter"
 
-	"github.com/pkg/errors"
+	"gitlab.com/tozd/go/errors"
 )
 
 const (
@@ -17,19 +19,18 @@ const (
 
 type ID3v2 struct {
 	Header  *Header
-	Frames  frames.Frames
+	Frames  *frames.Frames
 	Padding []byte
 
 	// f is file pointer to the mp3. This should be opened for writing.
 	f           *os.File
-	updated     bool
 	fullRewrite bool
 }
 
 func NewID3v2() *ID3v2 {
 	return &ID3v2{
 		Header:  &Header{},
-		Frames:  make(frames.Frames, 0),
+		Frames:  &frames.Frames{},
 		Padding: make([]byte, 0),
 	}
 }
@@ -65,45 +66,29 @@ func NewID3v2FromFile(file string) (*ID3v2, error) {
 	return tag, nil
 }
 
-func (i *ID3v2) Close() error {
-	defer i.f.Close()
-	if !i.updated {
-		return nil
-	}
+// Output returns what to write in the file starting at byte 0 (always implied).
+func (i *ID3v2) Output() ([]byte, error) {
 	b, err := i.MarshalBinary()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !i.fullRewrite {
-		if _, err := i.f.Seek(0, 0); err != nil {
-			return errors.WithStack(err)
-		}
-		_, err := i.f.Write(b)
-		return errors.WithStack(err)
+		return b, nil
 	}
-	// read in the rest of the file
 	mp3Bytes, err := io.ReadAll(i.f)
 	if err != nil {
-		return errors.WithStack(err)
+		return nil, errors.WithStack(err)
 	}
-	// write the tag
-	if _, err := i.f.Seek(0, 0); err != nil {
-		return errors.WithStack(err)
-	}
-	if _, err := i.f.Write(b); err != nil {
-		return errors.WithStack(err)
-	}
-	// write the rest of the file
-	if _, err := i.f.Write(mp3Bytes); err != nil {
-		return errors.WithStack(err)
-	}
+	return append(b, mp3Bytes...), nil
+}
 
-	return errors.WithStack(i.f.Close())
+func (i *ID3v2) Close() error {
+	return i.f.Close()
 }
 
 func (i *ID3v2) MarshalBinary() ([]byte, error) {
 	frames := []byte{}
-	for _, frame := range i.Frames {
+	for _, frame := range *i.Frames {
 		frameBytes, err := frame.MarshalBinary()
 		if err != nil {
 			return nil, err
@@ -114,8 +99,15 @@ func (i *ID3v2) MarshalBinary() ([]byte, error) {
 	var padding []byte
 	switch len(frames) <= i.Header.Size {
 	case true:
-		// Pad the remaining space in the tag.
-		padding = make([]byte, i.Header.Size-len(frames))
+		// if it shrunk a LOT, reduce the padding and do a whole rewrite
+		if i.Header.Size-len(frames) > AdditionalPaddingSize {
+			i.fullRewrite = true
+			i.Header.Size = len(frames) + AdditionalPaddingSize
+			padding = make([]byte, AdditionalPaddingSize)
+		} else {
+			// Pad the remaining space in the tag.
+			padding = make([]byte, i.Header.Size-len(frames))
+		}
 	case false:
 		// Tag size has grown too much. requires an entire file rewrite. Add additional padding.
 		i.fullRewrite = true
@@ -133,20 +125,19 @@ func (i *ID3v2) MarshalBinary() ([]byte, error) {
 	return header, nil
 }
 
-// SetTextFrame can be used for any T000-TZZZ frame (excluding TXXX).
-// This will overwrite any existing frame with the same id.
-// If there is no frame with the same id, it will append a new frame.
-// This will remove any other frames with the same id.
-func (i *ID3v2) SetTextFrame(id, value string) {
-	i.updated = true
-	i.Frames.SetTextInformationFrame(id, value)
+func (i *ID3v2) ApplyConfig(cfg *tagger.Config) {
+	for id, fb := range cfg.Frames {
+		i.Frames.ApplyFrame(frames.NewFrame(id, fb))
+	}
+	i.Frames.RemoveFramesWithID("APIC")
+	sort.Sort(i.Frames)
 }
 
 func (i *ID3v2) String() string {
 	var s strings.Builder
 	w := tabwriter.NewWriter(&s, 0, 0, 1, '.', tabwriter.AlignRight|tabwriter.Debug)
 	fmt.Fprintf(w, "%s\t%s\n", "Header", i.Header.String())
-	for _, frame := range i.Frames {
+	for _, frame := range *i.Frames {
 		fmt.Fprintf(w, "%s:\t%v\n", frame.Header, frame.Body.String())
 	}
 	w.Flush()

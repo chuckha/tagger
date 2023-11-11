@@ -1,61 +1,26 @@
 package frames
 
-import "testing"
+import (
+	"fmt"
+	"sort"
+	"testing"
+)
 
-func TestFrames_SetTextInformationFrame(t *testing.T) {
-	t.Run("empty frames", func(t *testing.T) {
-		frames := make(Frames, 0)
-		frames.SetTextInformationFrame("TRCK", "1/10")
-		if len(frames) != 1 {
-			t.Errorf("expected 1 frame, got %d", len(frames))
-		}
-		if frames[0].Header.ID != "TRCK" {
-			t.Errorf("expected frame id TRCK, got %q", frames[0].Header.ID)
-		}
-		if frames[0].Body.(*TextInformation).Information != "1/10" {
-			t.Errorf("expected frame body 1/10, got %q", frames[0].Body.String())
-		}
-	})
+func TestFrames_FramesSorting(t *testing.T) {
+	frames := Frames{
+		&Frame{Header: &FrameHeader{ID: "APIC"}},
+		&Frame{Header: &FrameHeader{ID: "TIT2"}},
+		&Frame{Header: &FrameHeader{ID: "TALB"}},
+		&Frame{Header: &FrameHeader{ID: "TPE1"}},
+		&Frame{Header: &FrameHeader{ID: "TPE2"}},
+	}
 
-	t.Run("existing frame", func(t *testing.T) {
-		frames := Frames{
-			&Frame{
-				Header: &FrameHeader{ID: "TRCK"},
-				Body:   &TextInformation{Information: "1/10"},
-			},
-		}
-		frames.SetTextInformationFrame("TRCK", "2/10")
-		if len(frames) != 1 {
-			t.Errorf("expected 1 frame, got %d", len(frames))
-		}
-		if frames[0].Header.ID != "TRCK" {
-			t.Errorf("expected frame id TRCK, got %q", frames[0].Header.ID)
-		}
-		if frames[0].Body.(*TextInformation).Information != "2/10" {
-			t.Errorf("expected frame body 2/10, got %q", frames[0].Body.String())
-		}
-	})
+	sort.Sort(&frames)
 
-	t.Run("multiple frames", func(t *testing.T) {
-		frames := Frames{
-			&Frame{
-				Header: &FrameHeader{ID: "TPE1"},
-				Body:   &TextInformation{Information: "Artist"},
-			},
-			&Frame{
-				Header: &FrameHeader{ID: "TRCK"},
-				Body:   &TextInformation{Information: "1/10"},
-			},
+	if frames[len(frames)-1].Header.ID != "APIC" {
+		for _, h := range frames {
+			fmt.Println(h.Header.ID)
 		}
-		frames.SetTextInformationFrame("TRCK", "2/10")
-		if len(frames) != 2 {
-			t.Errorf("expected 2 frames, got %d", len(frames))
-		}
-		if frames[1].Header.ID != "TRCK" {
-			t.Errorf("expected frame id TRCK, got %q", frames[0].Header.ID)
-		}
-		if frames[1].Body.(*TextInformation).Information != "2/10" {
-			t.Errorf("expected frame body 2/10, got %q", frames[0].Body.String())
-		}
-	})
+		t.Fatal("did not sort correctly")
+	}
 }

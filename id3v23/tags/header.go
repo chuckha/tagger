@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"tagger/id3math"
 
-	"github.com/pkg/errors"
+	"gitlab.com/tozd/go/errors"
 )
 
 type Header struct {

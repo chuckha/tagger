@@ -1,9 +1,12 @@
 package frames
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"tagger/id3string"
+
+	"gitlab.com/tozd/go/errors"
 )
 
 // AttachedPicture are all of the attached picture frames.
@@ -48,6 +51,18 @@ func (a *AttachedPicture) UnmarshalBinary(data []byte) error {
 		ptr += len(a.Description) + n
 	}
 	a.PictureData = data[ptr:]
+	return nil
+}
+
+func (a *AttachedPicture) UnmarshalJSON(data []byte) error {
+	return errors.New("not implemented for APIC")
+	// but actually here read in a file reference and use that as the picture data
+	if err := json.Unmarshal(data, a); err != nil {
+		return errors.WithStack(err)
+	}
+	if id3string.IsUnicode(a.Description) {
+		a.TextEncoding = 1
+	}
 	return nil
 }
 

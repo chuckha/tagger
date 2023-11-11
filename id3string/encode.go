@@ -7,13 +7,20 @@ import (
 
 func EncodeString(enc byte, s string) []byte {
 	switch enc {
-	case 0, 2, 3:
+	case 0, 3:
 		return append([]byte(s), '\x00')
-	case 1:
+	case 1, 2:
 		return append([]byte(s), '\x00', '\x00')
 	default:
 		panic(fmt.Sprintf("unhandled text encoding: %08b", enc))
 	}
+}
+
+func TextEncoding(s string) byte {
+	if IsUnicode(s) {
+		return 1
+	}
+	return 0
 }
 
 func IsUnicode(in string) bool {

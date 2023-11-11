@@ -1,8 +1,11 @@
 package frames
 
 import (
+	"encoding/json"
 	"fmt"
 	"tagger/id3string"
+
+	"gitlab.com/tozd/go/errors"
 )
 
 // UserDefinedURL have the identifier WXXX.
@@ -17,6 +20,16 @@ func (u *UserDefinedURL) UnmarshalBinary(data []byte) error {
 	info, n := id3string.ExtractStringFromEncoding(u.TextEncoding, data[1:])
 	u.Description = info
 	u.URL = string(data[len(info)+1+n:])
+	return nil
+}
+
+func (u *UserDefinedURL) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, u); err != nil {
+		return errors.WithStack(err)
+	}
+	if id3string.IsUnicode(u.Description) {
+		u.TextEncoding = 1
+	}
 	return nil
 }
 
