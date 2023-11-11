@@ -1,6 +1,7 @@
 package tags
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -88,6 +89,30 @@ func TestID3v2_MarshalBinary(t *testing.T) {
 		}
 		if len(out2) > len(out) {
 			t.Errorf("expected %d to be less than %d", len(out2), len(out))
+		}
+	})
+
+	t.Run("supports japanese in text tags", func(t *testing.T) {
+		japaneseFrame := &frames.Frame{
+			Header: &frames.FrameHeader{ID: "TPE1"},
+			Body:   frames.NewTextInformation("日本語"),
+		}
+		tag := createTag(t, japaneseFrame)
+		out, err := tag.MarshalBinary()
+		if err != nil {
+			t.Error(err)
+		}
+		nt := NewID3v2()
+		if err := nt.UnmarshalBinary(out); err != nil {
+			t.Error(err)
+		}
+		for _, f := range *nt.Frames {
+			if f.Header.ID == "TPE1" {
+				fmt.Println(f.Header, f.Body.String())
+				if f.Body.String() != japaneseFrame.Body.String() {
+					t.Errorf("expected %q to be %q", f.Body.String(), japaneseFrame.Body.String())
+				}
+			}
 		}
 	})
 }

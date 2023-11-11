@@ -20,6 +20,7 @@ func TestIsUnicode(t *testing.T) {
 		{"\uffff", true},
 		{"\U00010000", true},
 		{"\U0010ffff", true},
+		{"日本語", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
