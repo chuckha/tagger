@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/chuckha/tagger/id3string"
 
@@ -55,15 +56,31 @@ func (a *AttachedPicture) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
+// UnmarshalJSON will be in UTF-8; so decode that and encode it into UTF-16
 func (a *AttachedPicture) UnmarshalJSON(data []byte) error {
-	return errors.New("not implemented for APIC")
+	var in struct {
+		MIMEType    string
+		PictureType string
+		Description string
+		Data        string
+	}
 	// but actually here read in a file reference and use that as the picture data
-	if err := json.Unmarshal(data, a); err != nil {
+	if err := json.Unmarshal(data, &in); err != nil {
 		return errors.WithStack(err)
 	}
-	if !id3string.IsASCII(a.Description) {
-		a.TextEncoding = 1
+	a.MIMEType = in.MIMEType
+	a.PictureType = invertedPictureTypes()[in.PictureType]
+
+	b, err := os.ReadFile(strings.TrimLeft(in.Data, "@"))
+	if err != nil {
+		return errors.WithStack(err)
 	}
+	a.PictureData = b
+	if id3string.IsASCIIBytes([]byte(in.Description)) {
+		a.Description = []rune(in.Description)
+		return nil
+	}
+	a.Description = id3string.DecodeUTF8(in.Description)
 	return nil
 }
 
@@ -123,4 +140,12 @@ var PictureTypes = map[byte]string{
 	0x12: "Illustration",
 	0x13: "Band/artist logotype",
 	0x14: "Publisher/Studio logotype",
+}
+
+func invertedPictureTypes() map[string]byte {
+	out := map[string]byte{}
+	for k, v := range PictureTypes {
+		out[v] = k
+	}
+	return out
 }

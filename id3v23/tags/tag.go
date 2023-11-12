@@ -116,9 +116,7 @@ func (i *ID3v2) ApplyConfig(cfg *tagger.Config) error {
 			return err
 		}
 	}
-	// Don't actually want to remove APIC...
-	i.Frames.RemoveFramesWithID("APIC")
-
+	// Just put APIC at the end; don't change anything else
 	sort.Sort(i.Frames)
 	return nil
 }

@@ -3,7 +3,6 @@ package frames
 import (
 	"encoding/json"
 	"fmt"
-	"unicode/utf8"
 
 	"github.com/chuckha/tagger/id3string"
 
@@ -48,14 +47,8 @@ func (t *TextInformation) UnmarshalJSON(data []byte) error {
 		t.Information = []rune(string(in.Information))
 		return nil
 	}
-	out := []rune{}
-	for len(in.Information) > 0 {
-		r, size := utf8.DecodeRune([]byte(in.Information))
-		in.Information = in.Information[size:]
-		out = append(out, r)
-	}
 	t.TextEncoding = 1
-	t.Information = out
+	t.Information = id3string.DecodeUTF8(in.Information)
 	return nil
 }
 

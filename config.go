@@ -90,6 +90,12 @@ func (c *Config) UnmarshalJSON(data []byte) error {
 				return errors.WithStack(err)
 			}
 			c.Frames[k] = ti
+		case frames.AttachedPictureKind:
+			ap := &frames.AttachedPicture{}
+			if err := ap.UnmarshalJSON(data); err != nil {
+				return errors.WithStack(err)
+			}
+			c.Frames[k] = ap
 		default:
 			panic(fmt.Sprintf("config does not support frame %q", k))
 		}

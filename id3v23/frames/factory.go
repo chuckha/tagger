@@ -3,6 +3,8 @@ package frames
 import (
 	"fmt"
 	"strings"
+
+	"github.com/chuckha/tagger/id3string"
 )
 
 var ErrPadding = fmt.Errorf("padding")
@@ -67,9 +69,37 @@ func (f *Frames) ApplyFrame(frame *Frame) error {
 	case TextInformationKind, NonStandardTextInformationKind:
 		// remove all of the frames with the same id
 		for i := 0; i < len(*f); i++ {
-			if (*f)[i].Header.ID == frame.Header.ID {
+			if (*f)[i].Header.ID != frame.Header.ID {
+				continue
+			}
+			*f = append((*f)[:i], (*f)[i+1:]...)
+			i--
+		}
+	case AttachedPictureKind:
+		// if the content descriptor is the same; remove it
+		// if the incoming picture type is 01 or 02, remove the other 01 or 02 type
+		for i := 0; i < len(*f); i++ {
+			if (*f)[i].Header.ID != frame.Header.ID {
+				continue
+			}
+			if id3string.Equal((*f)[i].Body.(*AttachedPicture).Description, frame.Body.(*AttachedPicture).Description) {
 				*f = append((*f)[:i], (*f)[i+1:]...)
 				i--
+				continue
+			}
+			if frame.Body.(*AttachedPicture).PictureType == 0x01 {
+				if (*f)[i].Body.(*AttachedPicture).PictureType == 0x01 {
+					*f = append((*f)[:i], (*f)[i+1:]...)
+					i--
+					continue
+				}
+			}
+			if frame.Body.(*AttachedPicture).PictureType == 0x02 {
+				if (*f)[i].Body.(*AttachedPicture).PictureType == 0x02 {
+					*f = append((*f)[:i], (*f)[i+1:]...)
+					i--
+					continue
+				}
 			}
 		}
 	default:
