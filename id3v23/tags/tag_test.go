@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/chuckha/tagger"
 	"github.com/chuckha/tagger/id3v23/frames"
 )
 
@@ -17,13 +16,10 @@ func TestID3v2_MarshalBinary(t *testing.T) {
 		}
 		tag.Header.Size = len(out) - 10
 
-		err = tag.ApplyConfig(&tagger.Config{
-			Frames: map[string]frames.FrameBody{
-				"TIT1": &frames.TextInformation{Information: []rune("test99")},
-				"TPOS": &frames.TextInformation{Information: []rune("1/1")},
-				"TPE1": &frames.TextInformation{Information: []rune(strings.Repeat("a", 10000))},
-			},
-		})
+		err = tag.ApplyFrames(map[string]frames.FrameBody{
+			"TIT1": &frames.TextInformation{Information: []rune("test99")},
+			"TPOS": &frames.TextInformation{Information: []rune("1/1")},
+			"TPE1": &frames.TextInformation{Information: []rune(strings.Repeat("a", 10000))}})
 		if err != nil {
 			t.Error(err)
 		}
@@ -44,11 +40,8 @@ func TestID3v2_MarshalBinary(t *testing.T) {
 		}
 		tag.Header.Size = len(out) - 10
 
-		err = tag.ApplyConfig(&tagger.Config{
-			Frames: map[string]frames.FrameBody{
-				"TIT1": &frames.TextInformation{Information: []rune("t")},
-			},
-		})
+		err = tag.ApplyFrames(map[string]frames.FrameBody{
+			"TIT1": &frames.TextInformation{Information: []rune("t")}})
 		if err != nil {
 			t.Error(err)
 		}
@@ -73,12 +66,9 @@ func TestID3v2_MarshalBinary(t *testing.T) {
 		}
 		tag.Header.Size = len(out) - 10
 
-		err = tag.ApplyConfig(&tagger.Config{
-			Frames: map[string]frames.FrameBody{
-				"TIT1": &frames.TextInformation{Information: []rune("t")},
-				"TPE1": &frames.TextInformation{Information: []rune("smaller")},
-			},
-		})
+		err = tag.ApplyFrames(map[string]frames.FrameBody{
+			"TIT1": &frames.TextInformation{Information: []rune("t")},
+			"TPE1": &frames.TextInformation{Information: []rune("smaller")}})
 		if err != nil {
 			t.Error(err)
 		}

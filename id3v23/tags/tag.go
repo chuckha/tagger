@@ -9,7 +9,6 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/chuckha/tagger"
 	"github.com/chuckha/tagger/id3v23/frames"
 
 	"gitlab.com/tozd/go/errors"
@@ -110,8 +109,8 @@ func (i *ID3v2) MarshalBinary() ([]byte, error) {
 	return out, nil
 }
 
-func (i *ID3v2) ApplyConfig(cfg *tagger.Config) error {
-	for id, fb := range cfg.Frames {
+func (i *ID3v2) ApplyFrames(fs map[string]frames.FrameBody) error {
+	for id, fb := range fs {
 		if err := i.Frames.ApplyFrame(frames.NewFrame(id, fb)); err != nil {
 			return err
 		}
@@ -199,10 +198,8 @@ func (t *ID3v2) Write(src, dst string) error {
 		return errors.WithStack(err)
 	}
 	// copy the completed temp file to the output file
-	n, err := io.Copy(outfile, tmpf)
-	if err != nil {
+	if _, err := io.Copy(outfile, tmpf); err != nil {
 		return errors.WithStack(err)
 	}
-	fmt.Println("wrote", n, "bytes")
 	return nil
 }

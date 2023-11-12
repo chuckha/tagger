@@ -3,64 +3,11 @@ package tagger
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/chuckha/tagger/id3v23/frames"
 
 	"gitlab.com/tozd/go/errors"
 )
-
-const (
-	MissingID3v2Tag    = "missing-id3v2-tag"
-	AddMissingID3v2Tag = "add"
-)
-
-type TemplateConfig struct {
-	FilePattern       string
-	Overrides         map[string]any
-	OutputFilePattern string
-	// FramesTemplate is a pointer to a frames template json file.
-	// This is so the user does not have to do weird escaping within a string.
-	FramesTemplate string
-	UserData       any
-	Behavior       map[string]string
-}
-
-func NewTemplateConfig() *TemplateConfig {
-	return &TemplateConfig{
-		Overrides: make(map[string]any),
-		Behavior:  make(map[string]string),
-	}
-}
-
-func (t *TemplateConfig) UnmarshalJSON(b []byte) error {
-	var cfg struct {
-		FilePattern       string
-		Overrides         map[string]any
-		OutputFilePattern string
-		FramesTemplate    string
-		UserData          any
-		Behavior          map[string]string
-	}
-	if err := json.Unmarshal(b, &cfg); err != nil {
-		return errors.WithStack(err)
-	}
-	t.FilePattern = cfg.FilePattern
-	t.Overrides = cfg.Overrides
-	t.OutputFilePattern = cfg.OutputFilePattern
-	t.UserData = cfg.UserData
-	t.Behavior = cfg.Behavior
-	b, err := os.ReadFile(cfg.FramesTemplate)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	t.FramesTemplate = string(b)
-	return nil
-}
-
-func (t *TemplateConfig) AddMissingTag() bool {
-	return t.Behavior[MissingID3v2Tag] == AddMissingID3v2Tag
-}
 
 // Config specifies the ID3 Frames to be added to every mp3 file that goes through the pipeline.
 // There is an extraction language available to extract values from the path and put them into tags.

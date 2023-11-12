@@ -135,6 +135,28 @@ A FramesTemplate looks liket this:
 | count | `{{.special.count}}` | This is an ongoing count of every file processed regardless of where in the directory hierarchy it has been found |
 | total | `{{.special.total}}` | This finds and counts all matching files before processing begins in order to keep a good consistent count and file order.
 
+#### Special template characters
+
+For the `APIC` (attached picture) frame, a special character can be used in the Data field. Much like `cURL`, an `@` sign that prepends a file path will use that file contents as the `APIC` Frame's Picture Data. Here is an example:
+
+```
+{
+    "Frames": {
+        "TPOS": {"Information": "1"},
+        "TRCK": {"Information": "{{.episode}}/{{.special.total}}"},
+        "TCON": {"Information": "Other"},
+        "TALB": {"Information": "しろくまカフェ"},
+        "TPE1": {"Information": "ヒガアロハ"},
+        "APIC": {
+            "MIMEType": "image/png",
+            "PictureType": "Cover (front)",
+            "Description": "Shirokuma-san and Panda-kun",
+            "Data": "@./shirokuma.png"
+        }
+    }
+}
+```
+
 ## Developing
 
 # References

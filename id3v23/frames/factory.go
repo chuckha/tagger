@@ -7,8 +7,6 @@ import (
 	"github.com/chuckha/tagger/id3string"
 )
 
-var ErrPadding = fmt.Errorf("padding")
-
 const HeaderMinSize = 10
 
 type FrameBody interface {
