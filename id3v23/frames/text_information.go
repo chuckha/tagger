@@ -48,15 +48,12 @@ func (t *TextInformation) UnmarshalJSON(data []byte) error {
 		t.Information = []rune(string(in.Information))
 		return nil
 	}
-	utf8.DecodeRune([]byte(in.Information))
 	out := []rune{}
 	for len(in.Information) > 0 {
 		r, size := utf8.DecodeRune([]byte(in.Information))
 		in.Information = in.Information[size:]
 		out = append(out, r)
 	}
-
-	// otherwise it's utf-16 and i have to decode it
 	t.TextEncoding = 1
 	t.Information = out
 	return nil
