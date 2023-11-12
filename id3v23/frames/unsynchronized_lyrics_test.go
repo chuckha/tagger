@@ -13,7 +13,7 @@ func TestUnsynchronizedLyricsEncoding(t *testing.T) {
 				input: &UnsynchronizedLyrics{
 					TextEncoding:      0,
 					Language:          "eng",
-					ContentDescriptor: "content",
+					ContentDescriptor: []rune("content"),
 					Lyrics:            "lyrics",
 				},
 			},

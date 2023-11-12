@@ -12,7 +12,7 @@ func TestUserDefinedURLEncoding(t *testing.T) {
 				name: "valid user defined url",
 				input: &UserDefinedURL{
 					TextEncoding: 0,
-					Description:  "description",
+					Description:  []rune("description"),
 					URL:          "url",
 				},
 			},

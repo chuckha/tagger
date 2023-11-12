@@ -10,7 +10,7 @@ import (
 type UnsynchronizedLyrics struct {
 	TextEncoding      byte
 	Language          string
-	ContentDescriptor string
+	ContentDescriptor []rune
 	Lyrics            string
 }
 
@@ -19,7 +19,7 @@ func (u *UnsynchronizedLyrics) UnmarshalBinary(data []byte) error {
 	ptr := 1
 	u.Language = string(data[ptr : ptr+3])
 	ptr += 3
-	contentDesc, n := id3string.ExtractStringFromEncoding(u.TextEncoding, data[ptr:])
+	contentDesc, n := id3string.ExtractNullTerminatedValueWithEncoding(u.TextEncoding, data[ptr:])
 	u.ContentDescriptor = contentDesc
 	ptr += len(u.ContentDescriptor) + n
 	u.Lyrics = string(data[ptr:])
@@ -33,7 +33,7 @@ func (u *UnsynchronizedLyrics) String() string {
 func (u *UnsynchronizedLyrics) MarshalBinary() ([]byte, error) {
 	out := []byte{u.TextEncoding}
 	out = append(out, []byte(u.Language)...)
-	out = append(out, id3string.EncodeString(u.TextEncoding, u.ContentDescriptor)...)
+	out = append(out, id3string.EncodeRunesWithNullTerminator(u.TextEncoding, u.ContentDescriptor)...)
 	out = append(out, []byte(u.Lyrics)...)
 	return out, nil
 }
@@ -41,6 +41,6 @@ func (u *UnsynchronizedLyrics) MarshalBinary() ([]byte, error) {
 func (u *UnsynchronizedLyrics) Equal(u2 *UnsynchronizedLyrics) bool {
 	return u.TextEncoding == u2.TextEncoding &&
 		u.Language == u2.Language &&
-		u.ContentDescriptor == u2.ContentDescriptor &&
+		id3string.Equal(u.ContentDescriptor, u2.ContentDescriptor) &&
 		u.Lyrics == u2.Lyrics
 }

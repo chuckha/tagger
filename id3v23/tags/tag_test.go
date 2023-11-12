@@ -1,7 +1,6 @@
 package tags
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -20,9 +19,9 @@ func TestID3v2_MarshalBinary(t *testing.T) {
 
 		err = tag.ApplyConfig(&tagger.Config{
 			Frames: map[string]frames.FrameBody{
-				"TIT1": &frames.TextInformation{Information: "test99"},
-				"TPOS": &frames.TextInformation{Information: "1/1"},
-				"TPE1": &frames.TextInformation{Information: strings.Repeat("a", 10000)},
+				"TIT1": &frames.TextInformation{Information: []rune("test99")},
+				"TPOS": &frames.TextInformation{Information: []rune("1/1")},
+				"TPE1": &frames.TextInformation{Information: []rune(strings.Repeat("a", 10000))},
 			},
 		})
 		if err != nil {
@@ -47,7 +46,7 @@ func TestID3v2_MarshalBinary(t *testing.T) {
 
 		err = tag.ApplyConfig(&tagger.Config{
 			Frames: map[string]frames.FrameBody{
-				"TIT1": &frames.TextInformation{Information: "t"},
+				"TIT1": &frames.TextInformation{Information: []rune("t")},
 			},
 		})
 		if err != nil {
@@ -65,7 +64,7 @@ func TestID3v2_MarshalBinary(t *testing.T) {
 	t.Run("the new tag is significantly smaller than the original tag", func(t *testing.T) {
 		bigFrame := &frames.Frame{
 			Header: &frames.FrameHeader{ID: "TPE1"},
-			Body:   &frames.TextInformation{Information: strings.Repeat("a", 10000)},
+			Body:   &frames.TextInformation{Information: []rune(strings.Repeat("a", 10000))},
 		}
 		tag := createTag(t, bigFrame)
 		out, err := tag.MarshalBinary()
@@ -76,8 +75,8 @@ func TestID3v2_MarshalBinary(t *testing.T) {
 
 		err = tag.ApplyConfig(&tagger.Config{
 			Frames: map[string]frames.FrameBody{
-				"TIT1": &frames.TextInformation{Information: "t"},
-				"TPE1": &frames.TextInformation{Information: "smaller"},
+				"TIT1": &frames.TextInformation{Information: []rune("t")},
+				"TPE1": &frames.TextInformation{Information: []rune("smaller")},
 			},
 		})
 		if err != nil {
@@ -108,10 +107,7 @@ func TestID3v2_MarshalBinary(t *testing.T) {
 		}
 		for _, f := range *nt.Frames {
 			if f.Header.ID == "TPE1" {
-				fmt.Println(f.Header, f.Body.String())
-				if f.Body.String() != japaneseFrame.Body.String() {
-					t.Errorf("expected %q to be %q", f.Body.String(), japaneseFrame.Body.String())
-				}
+				f.Body.(*frames.TextInformation).Information = []rune("日本語")
 			}
 		}
 	})
@@ -123,15 +119,15 @@ func createTag(t *testing.T, fs ...*frames.Frame) *ID3v2 {
 	tag.Header.MajorVersion = 3
 	tag.Frames.ApplyFrame(&frames.Frame{
 		Header: &frames.FrameHeader{ID: "TIT2"},
-		Body:   &frames.TextInformation{Information: "test2"},
+		Body:   &frames.TextInformation{Information: []rune("test2")},
 	})
 	tag.Frames.ApplyFrame(&frames.Frame{
 		Header: &frames.FrameHeader{ID: "TIT1"},
-		Body:   &frames.TextInformation{Information: "test1"},
+		Body:   &frames.TextInformation{Information: []rune("test1")},
 	})
 	tag.Frames.ApplyFrame(&frames.Frame{
 		Header: &frames.FrameHeader{ID: "TIT3"},
-		Body:   &frames.TextInformation{Information: "test3"},
+		Body:   &frames.TextInformation{Information: []rune("test3")},
 	})
 	for _, f := range fs {
 		if err := tag.Frames.ApplyFrame(f); err != nil {

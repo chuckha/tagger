@@ -13,8 +13,8 @@ func TestCommentsEncoding(t *testing.T) {
 				input: &Comment{
 					TextEncoding:            0,
 					Language:                "eng",
-					ShortContentDescription: "short",
-					ActualText:              "actual",
+					ShortContentDescription: []rune("short"),
+					ActualText:              []rune("actual"),
 				},
 			},
 		}

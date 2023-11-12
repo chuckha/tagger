@@ -12,12 +12,12 @@ import (
 // Private Data frames have an ID of PRIV
 type PrivateData struct {
 	OwnerIdentifier string
-	Data            string
+	Data            []byte
 }
 
 func (p *PrivateData) UnmarshalBinary(data []byte) error {
-	p.OwnerIdentifier = id3string.ExtractNullTerminated(data)
-	p.Data = string(data[len(p.OwnerIdentifier)+1:])
+	p.OwnerIdentifier = id3string.ExtractNullTerminatedASCII(data)
+	p.Data = data[len(p.OwnerIdentifier)+1:]
 	return nil
 }
 
@@ -38,5 +38,5 @@ func (p *PrivateData) MarshalBinary() ([]byte, error) {
 
 func (p *PrivateData) Equal(p2 *PrivateData) bool {
 	return p.OwnerIdentifier == p2.OwnerIdentifier &&
-		p.Data == p2.Data
+		id3string.EqualBytes(p.Data, p2.Data)
 }

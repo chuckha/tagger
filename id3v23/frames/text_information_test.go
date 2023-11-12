@@ -14,7 +14,7 @@ func TestTextInformationEncoding(t *testing.T) {
 				name: "valid text information",
 				input: &TextInformation{
 					TextEncoding: 0,
-					Information:  "text",
+					Information:  []rune("text"),
 				},
 			},
 		}
@@ -64,6 +64,22 @@ func TestTextInformationEncoding(t *testing.T) {
 					t.Fatalf("expected text encoding to be %d, got %d", tt.expectedEncoding, ti.TextEncoding)
 				}
 			})
+		}
+	})
+
+	t.Run("Marshal does not write null bytes", func(t *testing.T) {
+		ti := &TextInformation{
+			TextEncoding: 1,
+			Information:  []rune("食べる"),
+		}
+		b, err := ti.MarshalBinary()
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, v := range b {
+			if v == 0x00 {
+				t.Fatal("null byte found")
+			}
 		}
 	})
 }

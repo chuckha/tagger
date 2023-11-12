@@ -16,7 +16,7 @@ type AttachedPicture struct {
 	TextEncoding byte
 	MIMEType     string
 	PictureType  byte
-	Description  string
+	Description  []rune
 	PictureData  []byte
 }
 
@@ -27,7 +27,7 @@ func (a *AttachedPicture) UnmarshalBinary(data []byte) error {
 	a.TextEncoding = data[0]
 	ptr := 1
 
-	a.MIMEType = id3string.ExtractNullTerminated(data[ptr:])
+	a.MIMEType = id3string.ExtractNullTerminatedASCII(data[ptr:])
 	// if the mime type is too long, re-parse it and assume the MIME-type is not 0 terminated and the description is missing
 	// not sure why the MP3s i tested had this malformatting...
 	if len(a.MIMEType) > 10 {
@@ -41,13 +41,13 @@ func (a *AttachedPicture) UnmarshalBinary(data []byte) error {
 		}
 		a.PictureType = data[ptr]
 		ptr++
-		a.Description = ""
+		a.Description = []rune{}
 	} else {
 		// otherwise we have a normal layout
 		ptr += len(a.MIMEType) + 1
 		a.PictureType = data[ptr]
 		ptr++
-		desc, n := id3string.ExtractStringFromEncoding(a.TextEncoding, data[ptr:])
+		desc, n := id3string.ExtractNullTerminatedValueWithEncoding(a.TextEncoding, data[ptr:])
 		a.Description = desc
 		ptr += len(a.Description) + n
 	}
@@ -61,7 +61,7 @@ func (a *AttachedPicture) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, a); err != nil {
 		return errors.WithStack(err)
 	}
-	if id3string.IsUnicode(a.Description) {
+	if !id3string.IsASCII(a.Description) {
 		a.TextEncoding = 1
 	}
 	return nil
@@ -86,10 +86,9 @@ func (a *AttachedPicture) String() string {
 
 func (a *AttachedPicture) MarshalBinary() ([]byte, error) {
 	out := []byte{a.TextEncoding}
-	out = append(out, []byte(a.MIMEType)...)
-	out = append(out, '\x00')
+	out = append(out, id3string.EncodeASCIIWithNullTerminator(a.MIMEType)...)
 	out = append(out, a.PictureType)
-	out = append(out, id3string.EncodeString(a.TextEncoding, a.Description)...)
+	out = append(out, id3string.EncodeRunesWithNullTerminator(a.TextEncoding, a.Description)...)
 	out = append(out, a.PictureData...)
 	return out, nil
 }
@@ -98,8 +97,8 @@ func (a *AttachedPicture) Equal(a2 *AttachedPicture) bool {
 	return a.TextEncoding == a2.TextEncoding &&
 		a.MIMEType == a2.MIMEType &&
 		a.PictureType == a2.PictureType &&
-		a.Description == a2.Description &&
-		string(a.PictureData) == string(a2.PictureData)
+		id3string.Equal(a.Description, a2.Description) &&
+		id3string.EqualBytes(a.PictureData, a2.PictureData)
 }
 
 var PictureTypes = map[byte]string{

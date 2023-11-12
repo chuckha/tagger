@@ -12,8 +12,8 @@ func TestUserDefinedTextInformationEncoding(t *testing.T) {
 				name: "valid user defined text information",
 				input: &UserDefinedTextInformation{
 					TextEncoding: 0,
-					Description:  "text",
-					Value:        "value",
+					Description:  []rune("text"),
+					Value:        []rune("value"),
 				},
 			},
 		}

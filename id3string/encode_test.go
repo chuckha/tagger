@@ -4,27 +4,27 @@ import "testing"
 
 func TestIsUnicode(t *testing.T) {
 	tests := []struct {
-		in   string
+		in   []rune
 		want bool
 	}{
-		{"", false},
-		{"a", false},
-		{"\x00", false},
-		{"\x01", false},
-		{"\x7f", false},
-		{"\x80", true},
-		{"\xff", true},
-		{"\u0100", true},
-		{"\u07ff", true},
-		{"\u0800", true},
-		{"\uffff", true},
-		{"\U00010000", true},
-		{"\U0010ffff", true},
-		{"日本語", true},
+		{[]rune(""), false},
+		{[]rune("a"), false},
+		{[]rune("\x00"), false},
+		{[]rune("\x01"), false},
+		{[]rune("\x7f"), false},
+		{[]rune("\x80"), true},
+		{[]rune("\xff"), true},
+		{[]rune("\u0100"), true},
+		{[]rune("\u07ff"), true},
+		{[]rune("\u0800"), true},
+		{[]rune("\uffff"), true},
+		{[]rune("\U00010000"), true},
+		{[]rune("\U0010ffff"), true},
+		{[]rune("日本語"), true},
 	}
 	for _, tt := range tests {
-		t.Run(tt.in, func(t *testing.T) {
-			if got := IsUnicode(tt.in); got != tt.want {
+		t.Run(string(tt.in), func(t *testing.T) {
+			if got := !IsASCII(tt.in); got != tt.want {
 				t.Errorf("IsUnicode(%q) = %v, want %v", tt.in, got, tt.want)
 			}
 		})

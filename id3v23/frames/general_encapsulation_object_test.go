@@ -13,8 +13,8 @@ func TestGeneralEncapsulationObjectEncoding(t *testing.T) {
 				input: &GeneralEncapsulationObject{
 					TextEncoding:       0,
 					MIMEType:           "text/plain",
-					Filename:           "filename.txt",
-					ContentDescription: "content description",
+					Filename:           []rune("filename.txt"),
+					ContentDescription: []rune("content description"),
 					EncapsulatedObject: []byte("encapsulated object"),
 				},
 			},

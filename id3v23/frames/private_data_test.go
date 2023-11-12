@@ -12,7 +12,7 @@ func TestPrivateDataEncoding(t *testing.T) {
 				name: "valid private data",
 				input: &PrivateData{
 					OwnerIdentifier: "owner",
-					Data:            "data",
+					Data:            []byte("data"),
 				},
 			},
 		}

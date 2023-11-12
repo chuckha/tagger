@@ -5,25 +5,30 @@ import (
 	"fmt"
 )
 
-func ExtractStringFromEncoding(enc byte, data []byte) (string, int) {
+func ExtractValueWithEncoding(enc byte, data []byte) ([]rune, int) {
 	switch enc {
 	case 0:
-		return ExtractNullTerminated(data), 1
+		return []rune(string(data)), 0
 	case 1:
-		return ExtractNullTerminatedUnicode(data), 2
-	case 2:
-		fmt.Println("warning: id3v2.4 (2) encoding used")
-		return ExtractNullTerminated(data), 1
-	case 3:
-		fmt.Println("warning: id3v2.4 (3) encoding used")
-		return ExtractNullTerminated(data), 1
+		return ExtractUnicode(data), 2 // consume 2 BOM bytes
 	default:
 		panic(fmt.Sprintf("unhandled text encoding: %08b", enc))
 	}
 }
 
-// ExtractNullTerminated is to be used when only a single null terminator ends a string.
-func ExtractNullTerminated(b []byte) string {
+func ExtractNullTerminatedValueWithEncoding(enc byte, data []byte) ([]rune, int) {
+	switch enc {
+	case 0:
+		return ExtractNullTerminated(data), 1
+	case 1:
+		// 4 are the BOM and the unicode null terminator
+		return ExtractUnicodeNullTerminated(data), 4
+	default:
+		panic(fmt.Sprintf("unhandled text encoding: %08b", enc))
+	}
+}
+
+func ExtractNullTerminatedASCII(b []byte) string {
 	n := bytes.IndexByte(b, 0)
 	if n == -1 {
 		return string(b)
@@ -31,11 +36,28 @@ func ExtractNullTerminated(b []byte) string {
 	return string(b[:n])
 }
 
-// ExtractNullTerminatedUnicode looks for two null bytes to end a string.
-func ExtractNullTerminatedUnicode(b []byte) string {
-	n := bytes.Index(b, []byte{0, 0})
+// ExtractNullTerminated is to be used when only a single null terminator ends a string.
+func ExtractNullTerminated(b []byte) []rune {
+	n := bytes.IndexByte(b, 0)
 	if n == -1 {
-		return string(b)
+		return []rune(string(b))
 	}
-	return string(b[:n])
+	return []rune(string(b[:n]))
+}
+
+// ExtractNullTerminatedUnicode gets the two BOM bytes, looks for a unicode null, then extracts the middle.
+func ExtractUnicodeNullTerminated(b []byte) []rune {
+	// TODO: use the bom to determine if it's big or little endian; for now assume big endian
+	_ = b[0:2]
+	n := bytes.Index(b[2:], []byte{0, 0})
+	if n == -1 {
+		return []rune(string(b))
+	}
+	return []rune(string(b[2:n]))
+}
+
+func ExtractUnicode(b []byte) []rune {
+	// TODO: use the bom to determine if it's big or little endian; for now assume big endian
+	_ = b[0:2]
+	return []rune(string(b[2:]))
 }

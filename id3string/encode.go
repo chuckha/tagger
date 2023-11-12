@@ -1,40 +1,66 @@
 package id3string
 
-import (
-	"fmt"
-	"unicode/utf8"
-)
+func EncodeASCIIWithNullTerminator(val string) []byte {
+	return append([]byte(val), '\x00')
+}
 
-func EncodeString(enc byte, s string) []byte {
+// EncodeRunesWithNullTerminator adds all the extra bytes that id3v2.3 expects.
+// In the case where the information is only ascii, (enc: 0), simply add a null terminator
+// In the case of UTF-16, (enc: 1), add a BOM, then the string, then two null terminators (unicode null).
+func EncodeRunesWithNullTerminator(enc byte, val []rune) []byte {
+	runes := EncodeRunes(enc, val)
 	switch enc {
-	case 0, 3:
-		return append([]byte(s), '\x00')
-	case 1, 2:
-		return append([]byte(s), '\x00', '\x00')
+	case 0:
+		return append(runes, '\x00')
+	case 1:
+		return append(runes, '\x00', '\x00')
 	default:
-		panic(fmt.Sprintf("unhandled text encoding: %08b", enc))
+		panic("unknown encoding for id3v2.3")
 	}
 }
 
-func TextEncoding(s string) byte {
-	if IsUnicode(s) {
-		return 1
+func EncodeRunes(enc byte, val []rune) []byte {
+	switch enc {
+	case 0:
+		return []byte(string(val))
+	case 1:
+		bom := []byte{'\xFF', '\xFE'}
+		return append(bom, []byte(string(val))...)
+	default:
+		panic("unknown encoding for id3v2.3")
 	}
-	return 0
 }
 
-func IsUnicode(in string) bool {
-	for len(in) > 0 {
-		r, size := utf8.DecodeRuneInString(in)
-		if r == utf8.RuneError {
-			// This means we have something that's kind of unicode but is a bit broken.
-			// So treat it as unicode
-			return true
+// IsASCII returns true if it's only ascii; otherwise assume UTF-16 since UTF-8 is not used.
+func IsASCII(in []rune) bool {
+	for _, c := range in {
+		if c > 127 {
+			return false
 		}
-		if size > 1 {
-			return true
-		}
-		in = in[size:]
 	}
-	return false
+	return true
+}
+
+func Equal(a, b []rune) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, c := range a {
+		if c != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func EqualBytes(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, c := range a {
+		if c != b[i] {
+			return false
+		}
+	}
+	return true
 }
