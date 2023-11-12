@@ -3,6 +3,7 @@ package frames
 import (
 	"encoding/json"
 	"fmt"
+	"unicode/utf8"
 
 	"github.com/chuckha/tagger/id3string"
 
@@ -35,6 +36,7 @@ func (t *TextInformation) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
+// JSON comes in as utf-8...
 func (t *TextInformation) UnmarshalJSON(data []byte) error {
 	var in struct {
 		Information string
@@ -42,10 +44,21 @@ func (t *TextInformation) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &in); err != nil {
 		return errors.WithStack(err)
 	}
-	t.Information = []rune(in.Information)
-	if !id3string.IsASCII(t.Information) {
-		t.TextEncoding = 1
+	if id3string.IsASCIIBytes([]byte(in.Information)) {
+		t.Information = []rune(string(in.Information))
+		return nil
 	}
+	utf8.DecodeRune([]byte(in.Information))
+	out := []rune{}
+	for len(in.Information) > 0 {
+		r, size := utf8.DecodeRune([]byte(in.Information))
+		in.Information = in.Information[size:]
+		out = append(out, r)
+	}
+
+	// otherwise it's utf-16 and i have to decode it
+	t.TextEncoding = 1
+	t.Information = out
 	return nil
 }
 

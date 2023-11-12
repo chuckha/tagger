@@ -82,4 +82,17 @@ func TestTextInformationEncoding(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("Unmarshal test...", func(t *testing.T) {
+		ti := &TextInformation{}
+		if err := ti.UnmarshalJSON([]byte(`{"Information":"しろくまカフェ"}`)); err != nil {
+			t.Fatal(err)
+		}
+		if ti.TextEncoding != 1 {
+			t.Fatalf("expected text encoding to be 1, got %d", ti.TextEncoding)
+		}
+		if string(ti.Information) != "しろくまカフェ" {
+			t.Fatalf("expected information to be しろくまカフェ, got %s", string(ti.Information))
+		}
+	})
 }

@@ -2,7 +2,9 @@ package id3string
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
+	"unicode/utf16"
 )
 
 func ExtractValueWithEncoding(enc byte, data []byte) ([]rune, int) {
@@ -53,11 +55,29 @@ func ExtractUnicodeNullTerminated(b []byte) []rune {
 	if n == -1 {
 		return []rune(string(b))
 	}
-	return []rune(string(b[2:n]))
+	return bytesToRunes(b[2:n])
 }
 
 func ExtractUnicode(b []byte) []rune {
 	// TODO: use the bom to determine if it's big or little endian; for now assume big endian
 	_ = b[0:2]
-	return []rune(string(b[2:]))
+	return bytesToRunes(b[2:])
+}
+
+func bytesToRunes(b []byte) []rune {
+	// Check if byte slice length is even
+	if len(b)%2 != 0 {
+		panic("byte slice has odd length, cannot be valid UTF-16")
+	}
+
+	// Convert []byte to []uint16
+	uints := make([]uint16, 0, len(b)/2)
+	for i := 0; i < len(b); i += 2 {
+		// For big endian, use binary.BigEndian.Uint16
+		// For little endian, use binary.LittleEndian.Uint16
+		uints = append(uints, binary.BigEndian.Uint16(b[i:i+2]))
+	}
+
+	// Decode []uint16 to []rune
+	return utf16.Decode(uints)
 }

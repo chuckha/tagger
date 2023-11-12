@@ -1,5 +1,7 @@
 package id3string
 
+import "unicode/utf16"
+
 func EncodeASCIIWithNullTerminator(val string) []byte {
 	return append([]byte(val), '\x00')
 }
@@ -24,8 +26,13 @@ func EncodeRunes(enc byte, val []rune) []byte {
 	case 0:
 		return []byte(string(val))
 	case 1:
-		bom := []byte{'\xFF', '\xFE'}
-		return append(bom, []byte(string(val))...)
+		encoded := utf16.Encode(val)
+		bytes := []byte{}
+		for _, c := range encoded {
+			bytes = append(bytes, byte(c>>8), byte(c&0xFF))
+		}
+		bom := []byte{'\xFE', '\xFF'}
+		return append(bom, bytes...)
 	default:
 		panic("unknown encoding for id3v2.3")
 	}
@@ -33,6 +40,14 @@ func EncodeRunes(enc byte, val []rune) []byte {
 
 // IsASCII returns true if it's only ascii; otherwise assume UTF-16 since UTF-8 is not used.
 func IsASCII(in []rune) bool {
+	for _, c := range in {
+		if c > 127 {
+			return false
+		}
+	}
+	return true
+}
+func IsASCIIBytes(in []byte) bool {
 	for _, c := range in {
 		if c > 127 {
 			return false
